@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,7 @@ public class LocationController {
         this.locationMapper = locationMapper;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<LocationDto> createLocation(@RequestBody @Valid LocationDto locationDto) {
 
@@ -36,6 +38,7 @@ public class LocationController {
 
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping
     public ResponseEntity<List<LocationDto>> getAllLocations() {
 
@@ -50,6 +53,7 @@ public class LocationController {
 
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping("/{id}")
     public ResponseEntity<LocationDto> getLocationById(@PathVariable Long id) {
         log.info("Getting location by id: {}", id);
@@ -58,6 +62,7 @@ public class LocationController {
         return ResponseEntity.ok(locationDto);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<LocationDto> updateLocationById(@PathVariable Long id,
                                                           @RequestBody @Valid LocationDto locationDto) {
@@ -70,6 +75,7 @@ public class LocationController {
         return ResponseEntity.ok(result);
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLocationById(@PathVariable Long id) {
         log.info("Deleting location by id: {}", id);

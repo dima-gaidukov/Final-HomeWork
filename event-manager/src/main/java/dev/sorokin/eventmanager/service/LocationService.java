@@ -56,7 +56,7 @@ public class LocationService {
     public Location updateLocation(Long id, Location location) {
 
         LocationEntity entity = locationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Location with id " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Location with id %d not found".formatted(id)));
         entity.setName(location.getName());
         entity.setAddress(location.getAddress());
         entity.setCapacity(location.getCapacity());
@@ -68,7 +68,7 @@ public class LocationService {
     public void deleteLocation(Long id) {
 
         LocationEntity entity = locationRepository.findById(id)
-                .orElseThrow(()-> new ResourceNotFoundException("Location with id " + id + " not found"));
+                .orElseThrow(()-> new ResourceNotFoundException("Location with id %d not found".formatted(id)));
         locationRepository.delete(entity);
     }
 
