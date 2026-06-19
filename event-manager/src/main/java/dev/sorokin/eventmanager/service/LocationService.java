@@ -16,9 +16,12 @@ public class LocationService {
 
     private final LocationMapper locationMapper;
 
-    public LocationService(LocationRepository locationRepository, LocationMapper locationMapper) {
+    private final EventService eventService;
+
+    public LocationService(LocationRepository locationRepository, LocationMapper locationMapper, EventService eventService) {
         this.locationRepository = locationRepository;
         this.locationMapper = locationMapper;
+        this.eventService = eventService;
     }
 
     public Location createLocation(Location createdLocation) {
@@ -55,8 +58,17 @@ public class LocationService {
 
     public Location updateLocation(Long id, Location location) {
 
+
+
         LocationEntity entity = locationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Location with id %d not found".formatted(id)));
+
+        if(location.getCapacity() < entity.getCapacity()){
+            if(eventService.isLocationHasEventsWithMaxPlacesGreaterThan(id, location.getCapacity() )){
+                throw new IllegalArgumentException("Cannot reduce capacity, events require more places");
+            }
+        }
+
         entity.setName(location.getName());
         entity.setAddress(location.getAddress());
         entity.setCapacity(location.getCapacity());
@@ -66,6 +78,10 @@ public class LocationService {
     }
 
     public void deleteLocation(Long id) {
+
+        if(eventService.isLocationHasEvents(id)){
+            throw  new IllegalArgumentException("Cannot delete location with existing events");
+        }
 
         LocationEntity entity = locationRepository.findById(id)
                 .orElseThrow(()-> new ResourceNotFoundException("Location with id %d not found".formatted(id)));
