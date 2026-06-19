@@ -1,0 +1,95 @@
+databaseChangeLog:
+  - changeSet:
+      id: 0004-add-events-and-registrations.yaml
+      author: course-team
+      changes:
+        - createTable:
+            tableName: events
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: owner_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_event_owner
+                    references: users(id)
+                    nullable: false
+              - column:
+                  name: max_places
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: occupied_places
+                  type: INTEGER
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: date
+                  type: TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: cost
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: duration
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_event_location
+                    references: locations(id)
+              - column:
+                  name: status
+                  type: VARCHAR(20)
+                  constraints:
+                    nullable: false
+
+        - createTable:
+            tableName: registrations
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: event_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_reg_event
+                    references: events(id)
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    foreignKeyName: fk_reg_user
+                    references: users(id)
+                    nullable: false
+        - addUniqueConstraint:
+            tableName: registrations
+            columnNames: event_id, user_id
+            constraintName: uk_reg_event_user
+
