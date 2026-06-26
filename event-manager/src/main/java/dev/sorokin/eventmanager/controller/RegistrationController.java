@@ -61,14 +61,13 @@ public class RegistrationController {
 
         Long userId = Long.valueOf(auth.getName());
 
-        var listRegistr = registrationService.getMyRegistrations(userId);
 
-        var fullList = listRegistr
+
+        return ResponseEntity.ok(registrationService.getMyRegistrations(userId)
                 .stream()
                 .map(eventMapper::toDto)
-                .toList();
-
-        return ResponseEntity.ok(fullList);
+                .toList()
+        );
 
     }
 

@@ -1,21 +1,27 @@
 package dev.sorokin.eventmanager.service;
 
 
+import dev.sorokin.eventcommon.kafka.ChangeItem;
+import dev.sorokin.eventcommon.kafka.EventChangeKafkaMessage;
 import dev.sorokin.eventmanager.domain.Event;
 import dev.sorokin.eventmanager.domain.EventStatus;
 import dev.sorokin.eventmanager.dto.EventSearchRequestDto;
 import dev.sorokin.eventmanager.entity.EventEntity;
 import dev.sorokin.eventmanager.entity.LocationEntity;
+import dev.sorokin.eventmanager.entity.RegistrationEntity;
 import dev.sorokin.eventmanager.exception.ResourceNotFoundException;
 import dev.sorokin.eventmanager.mapper.EventMapper;
+import dev.sorokin.eventmanager.messaging.EventKafkaProducer;
 import dev.sorokin.eventmanager.repository.EventRepository;
 import dev.sorokin.eventmanager.repository.LocationRepository;
+import dev.sorokin.eventmanager.repository.RegistrationRepository;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,10 +34,16 @@ public class EventService {
 
     private final LocationRepository locationRepository;
 
-    public EventService(EventRepository eventRepository, EventMapper eventMapper, LocationRepository locationRepository) {
+    private final RegistrationRepository registrationRepository;
+
+    private final EventKafkaProducer eventKafkaProducer;
+
+    public EventService(EventRepository eventRepository, EventMapper eventMapper, LocationRepository locationRepository, RegistrationRepository registrationRepository, EventKafkaProducer eventKafkaProducer) {
         this.eventRepository = eventRepository;
         this.eventMapper = eventMapper;
         this.locationRepository = locationRepository;
+        this.registrationRepository = registrationRepository;
+        this.eventKafkaProducer = eventKafkaProducer;
     }
 
     public Event createEvent(Long userId, Event event) {
@@ -80,6 +92,13 @@ public class EventService {
         EventEntity eventEntity = eventRepository.findById(eventId)
                 .orElseThrow(()-> new ResourceNotFoundException("Event with id " + eventId + " not found"));
 
+        String oldName = eventEntity.getName();
+        Integer oldCost = eventEntity.getCost();
+        LocalDateTime oldDate = eventEntity.getDate();
+        Integer oldDuration = eventEntity.getDuration();
+        Integer oldMaxPlaces = eventEntity.getMaxPlaces();
+        Long oldLocationId = eventEntity.getLocationId();
+
         boolean isOwner = userId.equals(eventEntity.getOwnerId());
 
         Authentication auth =  SecurityContextHolder.getContext().getAuthentication();
@@ -125,6 +144,47 @@ public class EventService {
         if(event.getDate() != null) eventEntity.setDate(event.getDate());
 
         EventEntity eventUpdated = eventRepository.save(eventEntity);
+
+        List<ChangeItem> changes = new ArrayList<>();
+
+        if(!oldName.equals(eventUpdated.getName())) {
+            changes.add(new ChangeItem("name", oldName, eventUpdated.getName()));
+        }
+        if (!oldCost.equals(eventUpdated.getCost())) {
+            changes.add(new ChangeItem("cost", oldCost, eventUpdated.getCost()));
+        }
+        if (!oldDate.equals(eventUpdated.getDate())) {
+            changes.add(new ChangeItem("date", oldDate, eventUpdated.getDate()));
+        }
+        if (!oldDuration.equals(eventUpdated.getDuration())) {
+            changes.add(new ChangeItem("duration", oldDuration, eventUpdated.getDuration()));
+        }
+        if(!oldMaxPlaces.equals(eventUpdated.getMaxPlaces())) {
+            changes.add(new ChangeItem("maxPlaces", oldMaxPlaces, eventUpdated.getMaxPlaces()));
+        }
+        if(!oldLocationId.equals(eventUpdated.getLocationId())) {
+            changes.add(new ChangeItem("locationId", oldLocationId, eventUpdated.getLocationId()));
+        }
+
+        List<RegistrationEntity> registrations = registrationRepository.findByEventId(eventId);
+
+        List<Long> subscriberIds = registrations
+                .stream()
+                .map(RegistrationEntity::getUserId)
+                .toList();
+
+        eventKafkaProducer.publishEventChange(new EventChangeKafkaMessage(
+                null,
+                "EVENT_UPDATED",
+                eventUpdated.getId(),
+                eventUpdated.getName(),
+                LocalDateTime.now(),
+                eventUpdated.getOwnerId(),
+                userId,
+                subscriberIds,
+                changes
+        ));
+
         return  eventMapper.toDomain(eventUpdated);
 
     }
@@ -134,6 +194,8 @@ public class EventService {
         if(optionalEvent.isEmpty()) {
             throw  new ResourceNotFoundException("Event with id " + eventId + " not found");
         }
+
+        var oldStatus = optionalEvent.get().getStatus();
 
         boolean isOwner = userId.equals(optionalEvent.get().getOwnerId());
         Authentication auth =  SecurityContextHolder.getContext().getAuthentication();
@@ -150,6 +212,28 @@ public class EventService {
 
         optionalEvent.get().setStatus(EventStatus.CANCELLED);
         eventRepository.save(optionalEvent.get());
+
+        List<ChangeItem> change = List.of(new ChangeItem("status", oldStatus,optionalEvent.get().getStatus()));
+
+        List<RegistrationEntity> registrations = registrationRepository.findByEventId(eventId);
+
+        List<Long> subscriberIds = registrations
+                .stream()
+                .map(RegistrationEntity::getUserId)
+                .toList();
+
+        eventKafkaProducer.publishEventChange(new EventChangeKafkaMessage(
+                null,
+                "EVENT_STATUS_CHANGED",
+                optionalEvent.get().getId(),
+                optionalEvent.get().getName(),
+                LocalDateTime.now(),
+                optionalEvent.get().getOwnerId(),
+                userId,
+                subscriberIds,
+                change
+        ));
+
     }
 
     public List<Event> getMyEvents(Long ownerId) {

@@ -20,6 +20,18 @@ spring:
     enabled: true
     change-log: classpath:/db/changelog/changelog-master.yaml
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+
+app:
+  kafka:
+    topic: event-changes
+
+
 logging:
   level:
     root: INFO
@@ -32,5 +44,7 @@ springdoc:
 jwt:
   secret: "374dea8e4dd662caeef44cc2f9b5dde020ffaaf5f69947519664af0d0809d530"
   expiration: 86400000
+
+
 
 
