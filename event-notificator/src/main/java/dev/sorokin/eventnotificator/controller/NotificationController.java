@@ -8,6 +8,8 @@ import dev.sorokin.eventnotificator.dto.NotificationPayloadDto;
 import dev.sorokin.eventnotificator.dto.NotificationResponseDto;
 import dev.sorokin.eventnotificator.entity.NotificationEntity;
 import dev.sorokin.eventnotificator.repository.NotificationRepository;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +30,14 @@ public class NotificationController {
     private final NotificationRepository notificationRepository;
 
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate stringRedisTemplate;
 
-    public NotificationController(NotificationRepository notificationRepository, ObjectMapper objectMapper) {
+    public NotificationController(NotificationRepository notificationRepository,
+                                  ObjectMapper objectMapper, StringRedisTemplate stringRedisTemplate) {
         this.notificationRepository = notificationRepository;
         this.objectMapper = objectMapper;
+
+        this.stringRedisTemplate = stringRedisTemplate;
     }
 
     @GetMapping
@@ -89,6 +95,14 @@ public class NotificationController {
                 request.getNotificationIds(),
                 LocalDateTime.now()
         );
+
+        try {
+            long count = notificationRepository.countByUserIdAndIsReadFalse(userId);
+            stringRedisTemplate.opsForValue().set("notif:unread:" + userId, String.valueOf(count));
+        }catch (Exception e){
+            log.error("Redis error", e);
+        }
+
         return ResponseEntity.noContent().build();
 
     }

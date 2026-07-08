@@ -4,6 +4,8 @@ import dev.sorokin.eventmanager.entity.LocationEntity;
 import dev.sorokin.eventmanager.exception.ResourceNotFoundException;
 import dev.sorokin.eventmanager.mapper.LocationMapper;
 import dev.sorokin.eventmanager.repository.LocationRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,6 +26,7 @@ public class LocationService {
         this.eventService = eventService;
     }
 
+    @CacheEvict(value = "locations",allEntries = true)
     public Location createLocation(Location createdLocation) {
 
         var locationEntity = locationMapper.toEntity(createdLocation);
@@ -34,6 +37,7 @@ public class LocationService {
 
     }
 
+    @Cacheable("locations")
     public Location getLocationById(Long id) {
 
         Optional<LocationEntity> foundEntity = locationRepository.findById(id);
@@ -47,6 +51,7 @@ public class LocationService {
 
     }
 
+    @Cacheable("locations")
     public List<Location> getAllLocations() {
 
         return locationRepository.findAll()
@@ -56,6 +61,7 @@ public class LocationService {
 
     }
 
+    @CacheEvict(value = "locations",allEntries = true)
     public Location updateLocation(Long id, Location location) {
 
 
@@ -77,6 +83,7 @@ public class LocationService {
         return  locationMapper.toDomain(locationRepository.save(entity));
     }
 
+    @CacheEvict(value = "locations",allEntries = true)
     public void deleteLocation(Long id) {
 
         if(eventService.isLocationHasEvents(id)){

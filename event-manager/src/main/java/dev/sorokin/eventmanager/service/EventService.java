@@ -15,6 +15,8 @@ import dev.sorokin.eventmanager.messaging.EventKafkaProducer;
 import dev.sorokin.eventmanager.repository.EventRepository;
 import dev.sorokin.eventmanager.repository.LocationRepository;
 import dev.sorokin.eventmanager.repository.RegistrationRepository;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -78,6 +80,7 @@ public class EventService {
 
     }
 
+    @Cacheable(value ="events",key ="#id")
     public Event getEventById(Long id) {
         Optional<EventEntity> optionalEvent = eventRepository.findById(id);
         if(optionalEvent.isEmpty()) {
@@ -87,6 +90,7 @@ public class EventService {
         return  eventMapper.toDomain(optionalEvent.get());
     }
 
+    @CacheEvict(value ="events",key ="#eventId")
     public Event updateEvent(Long eventId, Long userId, Event event) {
 
         EventEntity eventEntity = eventRepository.findById(eventId)
@@ -189,6 +193,7 @@ public class EventService {
 
     }
 
+    @CacheEvict(value ="events",key ="#eventId")
     public void  deleteEvent(Long eventId, Long userId) {
         Optional<EventEntity> optionalEvent = eventRepository.findById(eventId);
         if(optionalEvent.isEmpty()) {
