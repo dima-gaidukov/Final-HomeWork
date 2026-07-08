@@ -7,6 +7,8 @@ import dev.sorokin.eventmanager.service.LocationService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +29,7 @@ public class LocationController {
         this.locationMapper = locationMapper;
     }
 
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<LocationDto> createLocation(@RequestBody @Valid LocationDto locationDto) {
@@ -37,6 +40,7 @@ public class LocationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(locationMapper.toDto(createdLocation));
 
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping
@@ -53,6 +57,7 @@ public class LocationController {
 
     }
 
+
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping("/{id}")
     public ResponseEntity<LocationDto> getLocationById(@PathVariable Long id) {
@@ -61,6 +66,7 @@ public class LocationController {
         LocationDto locationDto = locationMapper.toDto(location);
         return ResponseEntity.ok(locationDto);
     }
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
@@ -74,6 +80,7 @@ public class LocationController {
         LocationDto result = locationMapper.toDto(updatedLocation);
         return ResponseEntity.ok(result);
     }
+
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")

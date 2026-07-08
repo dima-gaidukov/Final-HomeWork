@@ -29,10 +29,7 @@ public class UserController {
     public ResponseEntity<UserDto> getUserById(@PathVariable Long userId){
 
         log.info("getUserById");
-        var result = userService.getUserById(userId);
-        return ResponseEntity.ok(result);
-
-
+        return ResponseEntity.ok(userService.getUserById(userId));
 
     }
 

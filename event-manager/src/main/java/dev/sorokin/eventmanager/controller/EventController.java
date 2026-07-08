@@ -10,6 +10,8 @@ import dev.sorokin.eventmanager.service.EventService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,6 +50,7 @@ public class EventController {
 
     }
 
+
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @GetMapping("/{id}")
     public ResponseEntity<EventDto> getEventById(@PathVariable Long id) {
@@ -61,6 +64,7 @@ public class EventController {
         return ResponseEntity.ok(eventDto);
 
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @PutMapping("/{id}")
@@ -82,6 +86,7 @@ public class EventController {
 
 
     }
+
 
     @PreAuthorize("hasAnyRole('ADMIN')")
     @DeleteMapping("/{id}")

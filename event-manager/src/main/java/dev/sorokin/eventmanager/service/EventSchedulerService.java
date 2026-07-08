@@ -8,6 +8,8 @@ import dev.sorokin.eventmanager.entity.RegistrationEntity;
 import dev.sorokin.eventmanager.messaging.EventKafkaProducer;
 import dev.sorokin.eventmanager.repository.EventRepository;
 import dev.sorokin.eventmanager.repository.RegistrationRepository;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
@@ -24,11 +26,15 @@ public class EventSchedulerService {
 
     private final EventKafkaProducer eventKafkaProducer;
 
+    private final CacheManager cacheManager;
 
-    public EventSchedulerService(EventRepository eventRepository, RegistrationRepository registrationRepository, EventKafkaProducer eventKafkaProducer) {
+
+    public EventSchedulerService(EventRepository eventRepository, RegistrationRepository registrationRepository,
+                                 EventKafkaProducer eventKafkaProducer, CacheManager cacheManager) {
         this.eventRepository = eventRepository;
         this.registrationRepository = registrationRepository;
         this.eventKafkaProducer = eventKafkaProducer;
+        this.cacheManager = cacheManager;
     }
 
     @Scheduled(fixedRate = 60000)
@@ -45,6 +51,13 @@ public class EventSchedulerService {
             }
         }
         var starterNew = eventRepository.saveAll(starter);
+
+        for (EventEntity event : newListStarter) {
+            Cache cache = cacheManager.getCache("events");
+            if(cache != null) {
+                cache.evict(event.getId());
+            }
+        }
 
         for (EventEntity event : newListStarter) {
             var subscribersIds = registrationRepository.findByEventId(event.getId())
@@ -75,6 +88,13 @@ public class EventSchedulerService {
             }
         }
         var finishedNew = eventRepository.saveAll(finished);
+
+        for(EventEntity event : newListFinished) {
+            Cache cache = cacheManager.getCache("events");
+            if(cache != null) {
+                cache.evict(event.getId());
+            }
+        }
 
         for (EventEntity event : newListFinished) {
             var subscribersIds = registrationRepository.findByEventId(event.getId())

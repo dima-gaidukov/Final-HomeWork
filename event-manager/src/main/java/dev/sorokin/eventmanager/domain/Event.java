@@ -1,8 +1,12 @@
 package dev.sorokin.eventmanager.domain;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public class Event {
+public class Event implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
 
     private Long id;
 
